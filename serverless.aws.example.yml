@@ -12,13 +12,16 @@ package:
   exclude:
     - azure/**
     - google/**
-    
+
 provider:
   name: aws
   runtime: nodejs12.x
   stage: sandbox
   region: us-east-1
-  
+  apiGateway:
+    restApiId: 9s7u3jogkd
+    restApiRootResourceId: 2a9i7lrogf
+
   logs:
     restApi: true
 
@@ -33,16 +36,16 @@ provider:
           - ${opt:region, self:provider.region}
           - '.amazonaws.com/'
           - ${opt:stage, self:provider.stage}
-          
+
     AUTHZ_ISSUER: https://youroktaorg.oktapreview.com/oauth2/your_authz_server_id
     AUTHZ_SERVER: your_authz_server_id
     OKTA_ORG: youroktaorg.oktapreview.com
     STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
     EXPECTED_AUD_VALUE: https://yourFHIRserver.com
-    
+
     #TODO: Get rid of.
     API_KEY: your_api_key_here
-    
+
     PICKER_DISPLAY_NAME: Patient Picker
     PICKER_CLIENT_ID: patient_picker_client_id
     PICKER_CLIENT_SECRET: patient_picker_client_secret
@@ -50,13 +53,13 @@ provider:
     #DynamoDB Settings
     CACHE_TABLE_NAME: 'refreshTokenCache'
     CACHE_TTL_MINS: 1440
-#Provide additional access to allow read/write to our refresh token cache 
+#Provide additional access to allow read/write to our refresh token cache
   iamRoleStatements:
     - Effect: Allow
       Action:
         - dynamodb:GetItem
         - dynamodb:PutItem
-      Resource: 
+      Resource:
         Fn::GetAtt:
           - refreshTokenCache
           - Arn
@@ -64,27 +67,7 @@ provider:
 #Lambda functions
 functions:
 
-##METADATA ENDPOINTS
-  smart-config-endpoint:
-    handler: ${self:provider.name}/metadata_endpoints.smartConfigHandler
-    events:
-      - http:
-          path: /smart-configuration
-          method: GET
-          cors: true
-      - http:
-          path: /.well-known/smart-configuration
-          method: GET
-          cors: true
-          
-  metadata-endpoint:          
-    handler: ${self:provider.name}/metadata_endpoints.metadataHandler
-    events:
-      - http:
-          path: /metadata
-          method: GET
-          cors: true
-     
+  ##METADATA ENDPOINTS
   keys_endpoint:
     handler: ${self:provider.name}/keys.keysHandler
     events:
@@ -92,7 +75,7 @@ functions:
           path: /keys
           method: GET
           cors: true
-          
+
 ##AUTHORIZE ENDPOINTS
   smart-authorize-proxy:
     handler: ${self:provider.name}/authorize.authorizeHandler
@@ -107,7 +90,7 @@ functions:
       - http:
           path: /picker_oidc_callback
           method: GET
-      
+
   smart-proxy-callback:
     handler: ${self:provider.name}/authorize.authorizeCallbackHandler
     events:
@@ -123,54 +106,37 @@ functions:
           path: /token
           method: POST
           cors: true
-          
-##PATIENT PICKER UI          
+
+##PATIENT PICKER UI
   patient_picker_get:
     handler: ${self:provider.name}/patient_picker.patientPickerGetHandler
     events:
       - http:
           path: /patient_authorization
           method: GET
-  
+
   patient_picker_post:
-    handler: ${self:provider.name}/patient_picker.patientPickerPostHandler          
+    handler: ${self:provider.name}/patient_picker.patientPickerPostHandler
     events:
       - http:
           path: /patient_authorization
           method: POST
 
-##TOKEN HOOK  
+##TOKEN HOOK
   token_hook:
     handler: ${self:provider.name}/token_hook.tokenHookHandler
     events:
       - http:
           path: /tokenhook
           method: POST
- 
- ##MOCK PATIENT API 
+
+ ##MOCK PATIENT API
   mock_patient_service:
     handler: ${self:provider.name}/mock_patient_service.mockPatientServiceHandler
     events:
       - http:
           path: /patientMockService
           method: GET
-          
-#############          
-#HAPI Proxies
-#############
-      - http:
-          path: /{proxy+}
-          method: ANY
-          cors: true
-          integration: http-proxy
-          request:
-            uri: http://hapi.fhir.org/baseR4/{proxy}
-            parameters:
-              paths:
-                proxy: true      
-#################
-#END HAPI Proxies                
-#################
 
 # Other resources
 resources:

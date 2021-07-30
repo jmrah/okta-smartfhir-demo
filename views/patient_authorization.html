@@ -30,7 +30,7 @@
         </div>
         <div id="consent_scopes">
           {% for scope in scopes %}
-            {% if scope.consent == 'REQUIRED' %}
+            {% if (scope.consent == 'REQUIRED') or (scope.consent == 'FLEXIBLE') %}
               <div class="list_item">
             {% else %}
               <div class="list_item" style="display:none;">
